@@ -1,9 +1,9 @@
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
+!**/src/main/java/build/
 !**/src/test/**/build/
-!**/src/main/resources/output
+src/main/resources/output/
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
@@ -14,7 +14,7 @@ build/
 *.iml
 *.ipr
 out/
-!**/src/main/**/out/
+!**/src/main/java/out/
 !**/src/test/**/out/
 
 ### Eclipse ###
