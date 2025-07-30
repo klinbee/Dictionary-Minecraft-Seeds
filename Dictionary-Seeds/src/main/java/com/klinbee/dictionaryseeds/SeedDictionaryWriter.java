@@ -1,5 +1,6 @@
 package com.klinbee.dictionaryseeds;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,6 +15,7 @@ public class SeedDictionaryWriter {
                 new WordPermutationIterator(wordList) :
                 new WordIterator(wordList);
         writeToFile(outputFileName, iterator, OutputFormat.SEEDS_ONLY);
+        notifyFinishTask(outputFileName, writePermutations);
     }
 
     public static void writeWords(String[] wordList, String outputFileName, boolean writePermutations) {
@@ -21,6 +23,7 @@ public class SeedDictionaryWriter {
                 new WordPermutationIterator(wordList) :
                 new WordIterator(wordList);
         writeToFile(outputFileName, iterator, OutputFormat.WORDS_ONLY);
+        notifyFinishTask(outputFileName, writePermutations);
     }
 
     public static void writeWordsAndSeeds(String[] wordList, String outputFileName, boolean writePermutations) {
@@ -28,10 +31,29 @@ public class SeedDictionaryWriter {
                 new WordPermutationIterator(wordList) :
                 new WordIterator(wordList);
         writeToFile(outputFileName, iterator, OutputFormat.CSV);
+        notifyFinishTask(outputFileName, writePermutations);
+    }
+
+    private static void notifyFinishTask(String outputFileName, boolean writePermutations) {
+        String permutationsMessage = writePermutations ?
+                " with permutations" :
+                " without permutations";
+        System.out.println("Finished writing file " + outputFileName + permutationsMessage);
     }
 
     private static void writeToFile(String outputFileName, Iterator<String> wordIterator, OutputFormat format) {
         try {
+            File file = new File(outputFileName);
+            File parentDir = file.getParentFile();
+
+            if (parentDir != null && !parentDir.exists()) {
+                parentDir.mkdirs();
+            }
+
+            if (!file.exists()) {
+                file.createNewFile();
+            }
+
             FileWriter fileWriter = new FileWriter(outputFileName);
             if (format == OutputFormat.CSV) {
                 fileWriter.write("word,seed\n");
@@ -109,7 +131,15 @@ public class SeedDictionaryWriter {
 
         @Override
         public boolean hasNext() {
-            return wordIndex < wordList.length;
+            // Before the last word
+            if (wordIndex < wordList.length - 1) {
+                return true;
+            }
+            // Special case: last word, check index
+            if (wordIndex == wordList.length) {
+                return permutationIndex < currentWordPermutations.length;
+            }
+            return false;
         }
 
         @Override
@@ -127,7 +157,7 @@ public class SeedDictionaryWriter {
             for (int i = 0; i < maxPermutations; i++) {
                 permutations.add(generatePermutation(currentWord, i));
             }
-            currentWordPermutations = (String[]) permutations.toArray();
+            currentWordPermutations = permutations.toArray(new String[0]);
             permutationIndex = 0;
         }
 
@@ -145,6 +175,12 @@ public class SeedDictionaryWriter {
             for (int i = 0; i < len; i++) {
                 // All characters are lowercase by default
                 char c = word.charAt(i);
+                // Bit magic for permutations (max permutations is 2^length)
+                // Each number in that range represents a permutation
+                // E.g. for "cat" max permutations is 2^3 = 8
+                // In binary, 000, 001, 010, 011... 111
+                //            cat, caT, cAt, cAT... CAT
+                // All permutations, 0 is lowercase, 1 is uppercase
                 chars[i] = ((permutationIndex >> i) & 1) == 1 ?
                         (char) (c - 32) : // Lowercase -> uppercase via ASCII
                         c; // Leave as lowercase

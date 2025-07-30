@@ -25,7 +25,7 @@ public class DictionaryReader {
             throw new RuntimeException(e);
         }
 
-        return (String[]) words.toArray();
+        return words.toArray(new String[0]);
     }
 
 }
